@@ -124,6 +124,7 @@ select{border:1px solid #d5dce8;background:white}
 
 <tr>
 
+<th>رقم التذكرة</th>
 <th>اسم العميل</th>
 
 <th>البريد الإلكتروني</th>
@@ -251,7 +252,7 @@ async function loadRequests(){
 
   .from("service_requests")
 
-  .select("id,customer_name,customer_email,service_type,description,created_at,status,file_path")
+  .select("id,customer_name,customer_email,service_type,description,created_at,status,file_path,tracking_number")
 
   .order("created_at",{ascending:false});
 
@@ -274,6 +275,7 @@ async function loadRequests(){
   const tr=document.createElement("tr");
 
   const values=[
+    request.tracking_number || "—",
 
    request.customer_name,
 
