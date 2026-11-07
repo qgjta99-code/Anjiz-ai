@@ -135,6 +135,7 @@ select{border:1px solid #d5dce8;background:white}
 
 <th>تاريخ الإرسال</th>
 <th>المرفق</th>
+<th>ملف التسليم</th>
 
 <th>الحالة</th>
 
@@ -252,7 +253,7 @@ async function loadRequests(){
 
   .from("service_requests")
 
-  .select("id,customer_name,customer_email,service_type,description,created_at,status,file_path,tracking_number")
+  .select("id,customer_name,customer_email,service_type,description,created_at,status,file_path,tracking_number,delivery_file_path,delivered_at")
 
   .order("created_at",{ascending:false});
 
@@ -330,6 +331,56 @@ async function loadRequests(){
     fileTd.textContent="لا يوجد";
   }
   tr.appendChild(fileTd);
+
+  const deliveryTd=document.createElement("td");
+  const deliveryInput=document.createElement("input");
+  deliveryInput.type="file";
+  deliveryInput.accept=".pdf,.doc,.docx,.xls,.xlsx,.zip";
+  deliveryInput.setAttribute("aria-label","اختر ملف التسليم للتذكرة "+(request.tracking_number||""));
+  deliveryInput.style.width="190px";
+  deliveryInput.style.margin="0 0 8px";
+  const uploadButton=document.createElement("button");
+  uploadButton.type="button";
+  uploadButton.textContent="رفع الملف النهائي";
+  uploadButton.addEventListener("click",async()=>{
+    const file=deliveryInput.files?.[0];
+    if(!file){$("message").textContent="اختر ملف التسليم أولًا";return;}
+    const extension=file.name.split(".").pop()?.toLowerCase();
+    if(!["pdf","doc","docx","xls","xlsx","zip"].includes(extension)||file.size===0||file.size>10*1024*1024){
+      $("message").textContent="اختر PDF أو Word أو Excel أو ZIP بحجم لا يتجاوز 10 MB";return;
+    }
+    if(request.delivery_file_path&&!confirm("يوجد ملف تسليم سابق. هل تريد رفع نسخة جديدة؟"))return;
+    uploadButton.disabled=true;
+    deliveryInput.disabled=true;
+    $("message").textContent="جارٍ رفع الملف النهائي...";
+    let uploadedPath=null;
+    try{
+      const {data:{user},error:userError}=await supabase.auth.getUser();
+      if(userError||!user||user.id!==currentUser?.id)throw new Error("انتهت جلسة المدير");
+      const {data:admin,error:adminError}=await supabase.from("admin_users").select("user_id").eq("user_id",user.id).maybeSingle();
+      if(adminError||!admin)throw new Error("الحساب غير مخوّل");
+      const path=request.id+"/"+crypto.randomUUID()+"."+extension;
+      const {error:uploadError}=await supabase.storage.from("completed-files").upload(path,file,{upsert:false,contentType:file.type||"application/octet-stream"});
+      if(uploadError)throw uploadError;
+      uploadedPath=path;
+      const {data:updated,error:updateError}=await supabase.from("service_requests")
+        .update({delivery_file_path:path,delivered_at:new Date().toISOString()})
+        .eq("id",request.id).select("id,delivery_file_path").single();
+      if(updateError||!updated)throw updateError||new Error("تعذر ربط الملف بالطلب. تحقق من صلاحية تحديث الطلبات");
+      request.delivery_file_path=path;
+      deliveryStatus.textContent="تم رفع ملف التسليم (خاص بالمدير حاليًا)";
+      $("message").textContent="تم رفع الملف وربطه بالتذكرة "+(request.tracking_number||"")+". لم يتم تفعيل تنزيل العميل بعد.";
+      deliveryInput.value="";
+    }catch(err){
+      if(uploadedPath)await supabase.storage.from("completed-files").remove([uploadedPath]);
+      $("message").textContent="فشل رفع ملف التسليم: "+(err?.message||"خطأ غير معروف");
+    }finally{uploadButton.disabled=false;deliveryInput.disabled=false;}
+  });
+  const deliveryStatus=document.createElement("div");
+  deliveryStatus.className="muted";
+  deliveryStatus.textContent=request.delivery_file_path?"ملف التسليم محفوظ (خاص بالمدير حاليًا)":"لم يُرفع ملف نهائي";
+  deliveryTd.append(deliveryInput,uploadButton,deliveryStatus);
+  tr.appendChild(deliveryTd);
 
   const td=document.createElement("td");
 
