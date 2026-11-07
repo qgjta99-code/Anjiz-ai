@@ -5,10 +5,10 @@
 <section id="services"><div class="container"><h2>خدماتنا</h2><p class="sub">اختر الخدمة المناسبة أو اكتب طلبك بطريقتك.</p><div class="cards" id="servicecards"></div></div></section>
 <section id="assistant" style="background:#f0f0fb"><div class="container"><div class="highlight"><div><span class="tag">خدمة اشتراك اختيارية</span><h2>مساعدي AI الشخصي</h2><p>مساعدك لتنظيم المهام، وصياغة المستندات، وترتيب طلبات الخدمات، ومتابعة الأعمال. مع إمكانية طلب مساعدة بشرية عند الحاجة.</p><p class="muted">النسخة الحالية تعرض الخدمة وتسجل اهتمامك فقط؛ لا يوجد اشتراك مدفوع مفعل أو مساعد محادثة متصل بعد.</p><a href="#subscribe"><button class="primary">سجل اهتمامك</button></a></div><div class="card"><h3>باقات مستقبلية مقترحة</h3><p>شخصي — لتنظيم المهام والطلبات</p><p>بلس — استخدام أوسع وخدمات متابعة إضافية</p><div class="price">الأسعار قيد الدراسة</div><p>لن يتم تحصيل أي مبلغ الآن.</p></div></div></div></section>
 <section><div class="container"><h2>كيف تعمل المنصة؟</h2><div class="steps"><div class="step"><strong>01</strong><h3>اكتب طلبك</h3><p>حدد الخدمة واشرح المطلوب.</p></div><div class="step"><strong>02</strong><h3>نراجع طريقة التنفيذ</h3><p>آليًا عند توفر الأداة، أو بواسطة مختص بعد الاتفاق.</p></div><div class="step"><strong>03</strong><h3>تابع النتيجة</h3><p>احتفظ برقم طلبك وتابع حالته.</p></div></div></div></section>
-<section id="order" style="background:#edf1fa"><div class="container"><h2 style="text-align:center">اطلب خدمة</h2><p class="sub" style="text-align:center">حتى لو الخدمة غير موجودة، اكتب احتياجك وسنراجعه.</p><div class="formbox"><form id="orderform"><label for="customerName">اسم العميل</label><input id="customerName" name="customerName" autocomplete="name" maxlength="120" placeholder="الاسم الكامل" required><label for="customerEmail">البريد الإلكتروني</label><input id="customerEmail" name="customerEmail" type="email" autocomplete="email" maxlength="160" placeholder="name@example.com" required><label for="service">نوع الخدمة</label><select id="service" name="service" required></select><label for="description">وصف الطلب</label><textarea id="description" name="description" minlength="10" maxlength="3000" placeholder="اشرح المطلوب بالتفصيل" required></textarea><p class="muted">رفع الملفات غير متاح حاليًا. لا ترسل بيانات حساسة ضمن الوصف.</p><button class="primary" type="submit">إرسال الطلب</button><div id="orderresult" class="notice" role="status" aria-live="polite"></div></form></div></div></section>
+<section id="order" style="background:#edf1fa"><div class="container"><h2 style="text-align:center">اطلب خدمة</h2><p class="sub" style="text-align:center">حتى لو الخدمة غير موجودة، اكتب احتياجك وسنراجعه.</p><div class="formbox"><form id="orderform"><label for="customerName">اسم العميل</label><input id="customerName" name="customerName" autocomplete="name" maxlength="120" placeholder="الاسم الكامل" required><label for="customerEmail">البريد الإلكتروني</label><input id="customerEmail" name="customerEmail" type="email" autocomplete="email" maxlength="160" placeholder="name@example.com" required><label for="service">نوع الخدمة</label><select id="service" name="service" required></select><label for="description">وصف الطلب</label><textarea id="description" name="description" minlength="10" maxlength="3000" placeholder="اشرح المطلوب بالتفصيل" required></textarea><label for="attachment">إرفاق ملف (اختياري)</label><input id="attachment" name="attachment" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx"><p class="muted">PDF أو Word أو Excel فقط، بحد أقصى 10 MB. تجنب الملفات شديدة الحساسية.</p><button class="primary" type="submit">إرسال الطلب</button><div id="orderresult" class="notice" role="status" aria-live="polite"></div></form></div></div></section>
 <section id="tracking"><div class="container"><h2 style="text-align:center">تتبع طلبك</h2><div class="formbox"><form id="trackform"><label for="trackid">رقم الطلب</label><input id="trackid" placeholder="ANJ-XXXXXXXX" required><label for="trackcontact">وسيلة التواصل المستخدمة</label><input id="trackcontact" required><button class="primary">عرض الحالة</button><div id="trackresult" class="notice" role="status"></div></form></div></div></section>
 <section id="subscribe" style="background:#edf1fa"><div class="container"><h2 style="text-align:center">سجل اهتمامك بمساعدي AI</h2><div class="formbox"><form id="subform"><label for="plan">الباقة المهتم بها</label><select id="plan"><option value="personal">شخصي</option><option value="plus">بلس</option></select><label for="subcontact">البريد الإلكتروني أو وسيلة التواصل</label><input id="subcontact" required><button class="primary">تسجيل الاهتمام (بدون دفع)</button><div id="subresult" class="notice" role="status"></div></form></div></div></section>
-<div class="foot">أنجز AI — استقبال طلبات الخدمات عبر Supabase • رفع الملفات والتتبع والاشتراكات غير مفعّلة بعد</div>
+<div class="foot">أنجز AI — استقبال طلبات الخدمات عبر Supabase • التتبع والاشتراكات غير مفعّلة بعد</div>
 <script>
 const services=[['📄','معالجة PDF','دمج وتقسيم واستخراج البيانات من المستندات'],['📊','Excel وتحليل البيانات','تنظيف وتنسيق ومقارنة الجداول'],['📝','خدمات إدارية','خطابات ونماذج وتقارير'],['🧩','تطبيق أو أداة مخصصة','اطلب تقييمًا لفكرة برنامج أو أداة'],['🤝','خدمة بشرية','خدمة متخصصة تحتاج تنفيذًا بشريًا'],['💡','خدمة جديدة','اكتب خدمة غير موجودة في القائمة']];
 const cards=document.getElementById('servicecards'),select=document.getElementById('service');
@@ -26,13 +26,31 @@ document.getElementById('orderform').onsubmit=async e=>{
     service_type:document.getElementById('service').value,
     description:document.getElementById('description').value.trim()
   };
+  const attachment=document.getElementById('attachment').files[0];
+  if(attachment){
+    const ext=attachment.name.split('.').pop().toLowerCase();
+    if(!['pdf','doc','docx','xls','xlsx'].includes(ext) || attachment.size>10*1024*1024 || attachment.size===0){
+      msg('orderresult','المرفق يجب أن يكون PDF أو Word أو Excel، بحجم لا يتجاوز 10 MB.',true);return;
+    }
+  }
   if(payload.customer_name.length<2 || payload.description.length<10){
     msg('orderresult','تأكد من الاسم ووصف الطلب.',true);return;
   }
   button.disabled=true;button.textContent='جاري إرسال الطلب...';
   try{
+    const headers={};
+    let body;
+    if(attachment){
+      const data=new FormData();
+      Object.entries(payload).forEach(([key,value])=>data.append(key,value));
+      data.append('attachment',attachment);
+      body=data;
+    }else{
+      headers['Content-Type']='application/json';
+      body=JSON.stringify(payload);
+    }
     const response=await fetch('https://bnpxabjepraxualaqcrm.supabase.co/functions/v1/rapid-processor',{
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+      method:'POST',headers,body
     });
     const result=await response.json().catch(()=>({}));
     if(!response.ok || result.success!==true)throw new Error('request_failed');
