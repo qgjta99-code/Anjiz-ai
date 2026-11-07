@@ -133,6 +133,7 @@ select{border:1px solid #d5dce8;background:white}
 <th>وصف الطلب</th>
 
 <th>تاريخ الإرسال</th>
+<th>المرفق</th>
 
 <th>الحالة</th>
 
@@ -250,7 +251,7 @@ async function loadRequests(){
 
   .from("service_requests")
 
-  .select("id,customer_name,customer_email,service_type,description,created_at,status")
+  .select("id,customer_name,customer_email,service_type,description,created_at,status,file_path")
 
   .order("created_at",{ascending:false});
 
@@ -295,6 +296,38 @@ async function loadRequests(){
    tr.appendChild(td);
 
   }
+
+  const fileTd=document.createElement("td");
+  if(request.file_path){
+    const fileButton=document.createElement("button");
+    fileButton.type="button";
+    fileButton.className="secondary";
+    fileButton.textContent="تحميل المرفق";
+    fileButton.addEventListener("click",async()=>{
+      fileButton.disabled=true;
+      $("message").textContent="جارٍ تجهيز رابط المرفق...";
+      try{
+        const {data:{user},error:userError}=await supabase.auth.getUser();
+        if(userError||!user||user.id!==currentUser?.id)throw new Error("انتهت جلسة المدير");
+        const {data:admin,error:adminError}=await supabase.from("admin_users").select("user_id").eq("user_id",user.id).maybeSingle();
+        if(adminError||!admin)throw new Error("الحساب غير مخوّل");
+        const {data:link,error:linkError}=await supabase.storage.from("customer-files").createSignedUrl(request.file_path,60);
+        if(linkError||!link?.signedUrl)throw new Error(linkError?.message||"تعذر إنشاء الرابط");
+        const a=document.createElement("a");
+        a.href=link.signedUrl;
+        a.target="_blank";
+        a.rel="noopener noreferrer";
+        a.click();
+        $("message").textContent="تم تجهيز رابط مؤقت لمدة 60 ثانية";
+      }catch(err){
+        $("message").textContent="تعذر فتح المرفق: "+err.message;
+      }finally{fileButton.disabled=false;}
+    });
+    fileTd.appendChild(fileButton);
+  }else{
+    fileTd.textContent="لا يوجد";
+  }
+  tr.appendChild(fileTd);
 
   const td=document.createElement("td");
 
