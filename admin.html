@@ -20,7 +20,7 @@ header{background:#12213c;color:white;padding:18px 5%;display:flex;justify-conte
 
 h1{font-size:22px;margin:0}
 
-main{max-width:1100px;margin:35px auto;padding:0 18px}
+main{max-width:1350px;margin:35px auto;padding:0 18px}
 
 .card{background:white;padding:25px;border-radius:16px;box-shadow:0 4px 20px #15294b12;margin-bottom:20px}
 
@@ -51,6 +51,7 @@ th,td{padding:13px;border-bottom:1px solid #e7ecf4}
 th{background:#f8faff}
 
 .tablewrap{overflow-x:auto}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:15px 0}.toolbar label{display:block;font-weight:bold;font-size:13px}.toolbar input,.toolbar select{margin:5px 0 0;min-width:190px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.stat{background:white;padding:18px;border-radius:14px;border:1px solid #e3e9f3}.stat strong{display:block;font-size:25px;color:#1269d3}.stat span{font-size:13px;color:#667085}.actions{display:flex;flex-wrap:wrap;gap:7px}.small{font-size:12px;padding:8px 10px}.description{max-width:260px;white-space:pre-wrap;overflow-wrap:anywhere}.statusmsg{position:sticky;bottom:10px;background:#fff;padding:12px;border-radius:10px;box-shadow:0 3px 15px #15294b18;z-index:3}@media(max-width:700px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}header{gap:10px}h1{font-size:18px}}
 
 select{border:1px solid #d5dce8;background:white}
 
@@ -112,8 +113,9 @@ select{border:1px solid #d5dce8;background:white}
 
 </div>
 
+<div class="stats" aria-label="ملخص الطلبات"><div class="stat"><strong id="statAll">0</strong><span>إجمالي الطلبات</span></div><div class="stat"><strong id="statNew">0</strong><span>جديد</span></div><div class="stat"><strong id="statProgress">0</strong><span>قيد التنفيذ</span></div><div class="stat"><strong id="statDone">0</strong><span>مكتمل</span></div></div>
 <div class="card">
-
+<div class="toolbar"><div><label for="searchRequests">بحث في الطلبات</label><input id="searchRequests" type="search" placeholder="رقم التذكرة، العميل، البريد..."></div><div><label for="filterStatus">تصفية الحالة</label><select id="filterStatus"><option value="">كل الحالات</option><option>جديد</option><option>قيد التنفيذ</option><option>مكتمل</option><option>ملغي</option></select></div><button id="clearFilters" type="button" class="secondary">مسح التصفية</button></div>
 <p id="count" class="muted"></p>
 
 <div class="tablewrap">
@@ -149,7 +151,7 @@ select{border:1px solid #d5dce8;background:white}
 
 </div>
 
-<p id="message" role="status"></p>
+<p id="message" class="statusmsg" role="status" aria-live="polite"></p>
 
 </div>
 
@@ -174,6 +176,27 @@ const supabase=createClient(
 const $=id=>document.getElementById(id);
 
 let currentUser=null;
+let cachedRequests=[];
+function updateStats(){
+ const counts={};for(const r of cachedRequests)counts[r.status]=(counts[r.status]||0)+1;
+ $("statAll").textContent=cachedRequests.length;
+ $("statNew").textContent=counts["جديد"]||0;
+ $("statProgress").textContent=counts["قيد التنفيذ"]||0;
+ $("statDone").textContent=counts["مكتمل"]||0;
+}
+function applyFilters(){
+ const q=$("searchRequests").value.trim().toLowerCase();
+ const status=$("filterStatus").value;
+ let visible=0;
+ for(const tr of $("requestsBody").children){
+  const matches=(!q||tr.dataset.search.includes(q))&&(!status||tr.dataset.status===status);
+  tr.hidden=!matches;if(matches)visible++;
+ }
+ $("count").textContent=`عرض ${visible} من ${cachedRequests.length} طلب`;
+}
+$("searchRequests").addEventListener("input",applyFilters);
+$("filterStatus").addEventListener("change",applyFilters);
+$("clearFilters").addEventListener("click",()=>{$("searchRequests").value="";$("filterStatus").value="";applyFilters();});
 
 function showLogin(error=""){
 
@@ -186,7 +209,7 @@ function showLogin(error=""){
  $("loginError").textContent=error;
 
  currentUser=null;
-
+ cachedRequests=[];
 }
 
 function showDashboard(email){
@@ -265,7 +288,7 @@ async function loadRequests(){
 
  }
 
- $("count").textContent="إجمالي الطلبات: "+data.length;
+ cachedRequests=data||[];updateStats();
 
  $("message").textContent=data.length?"":"لا توجد طلبات حتى الآن";
 
@@ -274,6 +297,8 @@ async function loadRequests(){
  for(const request of data){
 
   const tr=document.createElement("tr");
+   tr.dataset.status=request.status||"";
+   tr.dataset.search=[request.tracking_number,request.customer_name,request.customer_email,request.service_type,request.description].join(" ").toLowerCase();
 
   const values=[
     request.tracking_number || "—",
@@ -304,7 +329,7 @@ async function loadRequests(){
   if(request.file_path){
     const fileButton=document.createElement("button");
     fileButton.type="button";
-    fileButton.className="secondary";
+    fileButton.className="secondary small";
     fileButton.textContent="تحميل المرفق";
     fileButton.addEventListener("click",async()=>{
       fileButton.disabled=true;
@@ -342,6 +367,7 @@ async function loadRequests(){
   const uploadButton=document.createElement("button");
   uploadButton.type="button";
   uploadButton.textContent="رفع الملف النهائي";
+   uploadButton.className="small";
   uploadButton.addEventListener("click",async()=>{
     const file=deliveryInput.files?.[0];
     if(!file){$("message").textContent="اختر ملف التسليم أولًا";return;}
@@ -368,9 +394,10 @@ async function loadRequests(){
         .eq("id",request.id).select("id,delivery_file_path").single();
       if(updateError||!updated)throw updateError||new Error("تعذر ربط الملف بالطلب. تحقق من صلاحية تحديث الطلبات");
       request.delivery_file_path=path;
-      deliveryStatus.textContent="تم رفع ملف التسليم (خاص بالمدير حاليًا)";
-      $("message").textContent="تم رفع الملف وربطه بالتذكرة "+(request.tracking_number||"")+". لم يتم تفعيل تنزيل العميل بعد.";
+      deliveryStatus.textContent="ملف نهائي جاهز للاستلام بعد التحقق بالبريد";
+      $("message").textContent="تم رفع الملف وربطه بالتذكرة "+(request.tracking_number||"")+". يمكن للعميل استلامه برمز البريد.";
       deliveryInput.value="";
+       await loadRequests();
     }catch(err){
       if(uploadedPath)await supabase.storage.from("completed-files").remove([uploadedPath]);
       $("message").textContent="فشل رفع ملف التسليم: "+(err?.message||"خطأ غير معروف");
@@ -378,8 +405,25 @@ async function loadRequests(){
   });
   const deliveryStatus=document.createElement("div");
   deliveryStatus.className="muted";
-  deliveryStatus.textContent=request.delivery_file_path?"ملف التسليم محفوظ (خاص بالمدير حاليًا)":"لم يُرفع ملف نهائي";
+  deliveryStatus.textContent=request.delivery_file_path?"ملف نهائي جاهز للاستلام":"لم يُرفع ملف نهائي";
   deliveryTd.append(deliveryInput,uploadButton,deliveryStatus);
+   if(request.delivery_file_path){
+    const preview=document.createElement("button");preview.type="button";preview.className="secondary small";preview.textContent="فتح ملف التسليم";
+    preview.addEventListener("click",async()=>{
+      preview.disabled=true;
+      try{
+        const {data:{user},error:userError}=await supabase.auth.getUser();
+        if(userError||!user||user.id!==currentUser?.id)throw new Error("انتهت جلسة المدير");
+        const {data:admin,error:adminError}=await supabase.from("admin_users").select("user_id").eq("user_id",user.id).maybeSingle();
+        if(adminError||!admin)throw new Error("الحساب غير مخوّل");
+        const {data:link,error}=await supabase.storage.from("completed-files").createSignedUrl(request.delivery_file_path,60);
+        if(error||!link?.signedUrl)throw error||new Error("تعذر إنشاء الرابط");
+        window.open(link.signedUrl,"_blank","noopener,noreferrer");
+      }catch(err){$("message").textContent="تعذر فتح ملف التسليم: "+(err.message||"خطأ");}
+      finally{preview.disabled=false;}
+    });
+    deliveryTd.append(preview);
+   }
   tr.appendChild(deliveryTd);
 
   const td=document.createElement("td");
@@ -420,7 +464,7 @@ async function loadRequests(){
 
     select.value=previous;
 
-    $("message").textContent="فشل الحفظ: "+error.message;
+    $("message").textContent="فشل الحفظ: "+(error?.message||"لم يتم تأكيد التحديث");
 
    }else{
 
@@ -441,6 +485,7 @@ async function loadRequests(){
   $("requestsBody").appendChild(tr);
 
  }
+ applyFilters();
 
 }
 
