@@ -1,0 +1,17 @@
+<!-- Add inside <form id="orderform"> -->
+<label for="attachment">إرفاق ملف (اختياري، حتى 10 MB)</label>
+<input id="attachment" name="attachment" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx">
+
+<!-- In the existing submit handler, replace the JSON body with FormData:
+const data = new FormData();
+data.append('customer_name', document.getElementById('customer_name').value.trim());
+data.append('customer_email', document.getElementById('contact').value.trim());
+data.append('service_type', document.getElementById('service').value);
+data.append('description', document.getElementById('description').value.trim());
+const file = document.getElementById('attachment').files[0];
+if (file) data.append('attachment', file);
+const response = await fetch('https://bnpxabjepraxualaqcrm.supabase.co/functions/v1/rapid-processor', {
+  method: 'POST', body: data
+});
+Do NOT set Content-Type manually for FormData.
+-->
