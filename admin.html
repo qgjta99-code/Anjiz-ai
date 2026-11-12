@@ -8,7 +8,7 @@
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>أنجز AI | لوحة الإدارة</title>
+<title>إنجز AI | لوحة الإدارة</title>
 
 <style>
 
@@ -51,12 +51,30 @@ th,td{padding:13px;border-bottom:1px solid #e7ecf4}
 th{background:#f8faff}
 
 .tablewrap{overflow-x:auto}
-.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:15px 0}.toolbar label{display:block;font-weight:bold;font-size:13px}.toolbar input,.toolbar select{margin:5px 0 0;min-width:190px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.stat{background:white;padding:18px;border-radius:14px;border:1px solid #e3e9f3}.stat strong{display:block;font-size:25px;color:#1269d3}.stat span{font-size:13px;color:#667085}.actions{display:flex;flex-wrap:wrap;gap:7px}.small{font-size:12px;padding:8px 10px}.description{max-width:260px;white-space:pre-wrap;overflow-wrap:anywhere}.statusmsg{position:sticky;bottom:10px;background:#fff;padding:12px;border-radius:10px;box-shadow:0 3px 15px #15294b18;z-index:3}@media(max-width:700px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}header{gap:10px}h1{font-size:18px}}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:15px 0}.toolbar label{display:block;font-weight:bold;font-size:13px}.toolbar input,.toolbar select{margin:5px 0 0;min-width:190px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.stat{background:white;padding:18px;border-radius:14px;border:1px solid #e3e9f3}.stat strong{display:block;font-size:25px;color:#1269d3}.stat span{font-size:13px;color:#667085}.actions{display:flex;flex-wrap:wrap;gap:7px}.small{font-size:12px;padding:8px 10px}.description{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9;background:#f7f9fc;padding:14px;border-radius:12px;max-height:38vh;overflow-y:auto}.statusmsg{position:sticky;bottom:10px;background:#fff;padding:12px;border-radius:10px;box-shadow:0 3px 15px #15294b18;z-index:3}@media(max-width:700px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}header{gap:10px}h1{font-size:18px}}
 
 select{border:1px solid #d5dce8;background:white}
 
 #message{margin-top:15px}
 
+/* تفاصيل الطلب في نافذة منبثقة */
+.request-dialog{border:0;border-radius:20px;padding:0;width:min(760px,calc(100vw - 28px));max-height:min(90vh,900px);box-shadow:0 24px 85px #101b3999;color:#17233b;direction:rtl;overflow:hidden}
+.request-dialog::backdrop{background:#0c1735ab;backdrop-filter:blur(3px)}
+.modal-head{padding:20px 24px;background:#12213c;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.modal-head h2{margin:0;font-size:20px}.modal-head .muted{color:#e2e8f0;margin:6px 0 0}
+.modal-head .close-modal{background:#ffffff25;color:white;font-size:23px;line-height:1;padding:7px 13px}
+.modal-body{overflow-y:auto;max-height:calc(90vh - 85px);padding:22px 24px}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.detail-item{background:#f7f9fc;padding:13px;border-radius:12px;min-width:0;overflow-wrap:anywhere}
+.detail-label{display:block;color:#667085;font-size:12px;margin-bottom:6px}
+.detail-value{font-weight:bold;white-space:pre-wrap;overflow-wrap:anywhere}
+.detail-section{margin-top:20px;border-top:1px solid #e7ecf4;padding-top:17px}
+.detail-section h3{margin:0 0 12px;font-size:16px}
+.detail-section input[type=file]{width:100%;max-width:100%}
+.status-pill{display:inline-block;border-radius:999px;padding:6px 12px;background:#e9f1ff;color:#1557a7;font-weight:bold;font-size:12px;white-space:nowrap}
+.ticket-cell{white-space:nowrap;font-weight:bold}.details-btn{white-space:nowrap}
+#requestsBody td{vertical-align:middle}
+@media(max-width:600px){.detail-grid{grid-template-columns:1fr}.modal-body{padding:16px}.modal-head{padding:16px}.request-dialog{width:calc(100vw - 16px);max-height:93vh}.modal-body{max-height:calc(93vh - 75px)}}
 </style>
 
 </head>
@@ -65,7 +83,7 @@ select{border:1px solid #d5dce8;background:white}
 
 <header>
 
-<h1>أنجز AI | لوحة الإدارة</h1>
+<h1>إنجز AI | لوحة الإدارة</h1>
 
 <button id="logout" class="secondary hidden">تسجيل الخروج</button>
 
@@ -123,26 +141,14 @@ select{border:1px solid #d5dce8;background:white}
 <table>
 
 <thead>
-
 <tr>
-
 <th>رقم التذكرة</th>
 <th>اسم العميل</th>
-
-<th>البريد الإلكتروني</th>
-
 <th>نوع الخدمة</th>
-
-<th>وصف الطلب</th>
-
 <th>تاريخ الإرسال</th>
-<th>المرفق</th>
-<th>ملف التسليم</th>
-
 <th>الحالة</th>
-
+<th>الإجراءات</th>
 </tr>
-
 </thead>
 
 <tbody id="requestsBody"></tbody>
@@ -482,6 +488,75 @@ async function loadRequests(){
 
   tr.appendChild(td);
 
+   // Keep the original authenticated attachment, delivery and status controls,
+   // but move them into a popup rather than stretching the table row.
+   const cells=Array.from(tr.cells);
+   const dialog=document.createElement("dialog");
+   dialog.className="request-dialog";
+   dialog.setAttribute("aria-label","تفاصيل الطلب "+(request.tracking_number||""));
+
+   const head=document.createElement("div");head.className="modal-head";
+   const headText=document.createElement("div");
+   const heading=document.createElement("h2");heading.textContent="تفاصيل الطلب";
+   const ticketSubtitle=document.createElement("p");ticketSubtitle.className="muted";
+   ticketSubtitle.textContent=request.tracking_number||"بدون رقم تذكرة";
+   headText.append(heading,ticketSubtitle);
+   const close=document.createElement("button");close.type="button";close.className="close-modal";
+   close.textContent="×";close.setAttribute("aria-label","إغلاق التفاصيل");
+   close.addEventListener("click",()=>dialog.close());
+   head.append(headText,close);
+
+   const body=document.createElement("div");body.className="modal-body";
+   const grid=document.createElement("div");grid.className="detail-grid";
+   for(const [label,value] of [
+     ["رقم التذكرة",request.tracking_number],["اسم العميل",request.customer_name],
+     ["البريد الإلكتروني",request.customer_email],["نوع الخدمة",request.service_type],
+     ["تاريخ الإرسال",request.created_at?new Date(request.created_at).toLocaleString("ar-SA"):"—"],
+     ["تاريخ التسليم",request.delivered_at?new Date(request.delivered_at).toLocaleString("ar-SA"):"لم يتم التسليم"]
+   ]){
+     const item=document.createElement("div");item.className="detail-item";
+     const labelEl=document.createElement("span");labelEl.className="detail-label";labelEl.textContent=label;
+     const valueEl=document.createElement("div");valueEl.className="detail-value";valueEl.textContent=value??"—";
+     item.append(labelEl,valueEl);grid.appendChild(item);
+   }
+   body.appendChild(grid);
+
+   function addDetailSection(label, content){
+     const section=document.createElement("section");section.className="detail-section";
+     const title=document.createElement("h3");title.textContent=label;section.appendChild(title);
+     if(content instanceof Node)section.appendChild(content);
+     else {const text=document.createElement("div");text.textContent=content??"—";section.appendChild(text);}
+     body.appendChild(section);
+   }
+   const description=document.createElement("div");description.className="description";
+   description.textContent=request.description||"لا يوجد وصف";
+   addDetailSection("الوصف الكامل",description);
+
+   // Move existing controls without changing Supabase permissions or handlers.
+   const attachment=document.createElement("div");
+   while(cells[6].firstChild)attachment.appendChild(cells[6].firstChild);
+   addDetailSection("مرفقات العميل",attachment);
+   const delivery=document.createElement("div");
+   while(cells[7].firstChild)delivery.appendChild(cells[7].firstChild);
+   addDetailSection("ملف التسليم النهائي",delivery);
+   const statusControl=document.createElement("div");
+   while(cells[8].firstChild)statusControl.appendChild(cells[8].firstChild);
+   addDetailSection("تغيير حالة الطلب",statusControl);
+   dialog.append(head,body);
+   dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});
+   document.body.appendChild(dialog);
+
+   // Compact table: ticket, customer, service, date, status, details.
+   for(const index of [8,7,6,4,2])cells[index].remove();
+   cells[0].classList.add("ticket-cell");
+   const statusDisplay=document.createElement("td");
+   const pill=document.createElement("span");pill.className="status-pill";pill.textContent=request.status||"—";
+   statusDisplay.appendChild(pill);tr.appendChild(statusDisplay);
+   const detailsCell=document.createElement("td");
+   const open=document.createElement("button");open.type="button";
+   open.className="small details-btn";open.textContent="عرض التفاصيل";
+   open.addEventListener("click",()=>dialog.showModal());
+   detailsCell.appendChild(open);tr.appendChild(detailsCell);
   $("requestsBody").appendChild(tr);
 
  }
