@@ -233,7 +233,7 @@ function makeEl(tag,cls,content){
 function displayDate(value){
  if(!value)return "غير متوفر";
  const d=new Date(value);
- return Number.isNaN(d.getTime())?"غير متوفر":d.toLocaleString("ar-SA");
+ return Number.isNaN(d.getTime())?"غير متوفر":d.toLocaleString("ar-SA",{timeZone:"Asia/Riyadh"});
 }
 function renderBalances(rows){
  const grid=$("balancesGrid");grid.replaceChildren();
@@ -243,7 +243,7 @@ function renderBalances(rows){
   const data=map.get(key);
   const card=makeEl("article","balance-card"+(!data?" unavailable":""));
   const head=makeEl("div","balance-name");
-  head.append(makeEl("span","",providerLabels[key]||key),makeEl("span","balance-status",data?(data.last_error?"خطأ مزامنة":"مسجل"):"غير مربوط"));
+  head.append(makeEl("span","",providerLabels[key]||key),makeEl("span","balance-status",data?(data.last_error||data.last_http_status!==200?"مشكلة اتصال":"آخر مزامنة ناجحة"):"غير مربوط"));
   card.append(head);
   if(data&&data.remaining_quota!==null&&data.remaining_quota!==undefined){
    card.append(makeEl("div","balance-number",Number(data.remaining_quota).toLocaleString("en-US",{maximumFractionDigits:3})));
