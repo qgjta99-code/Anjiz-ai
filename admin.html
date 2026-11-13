@@ -75,6 +75,34 @@ select{border:1px solid #d5dce8;background:white}
 .ticket-cell{white-space:nowrap;font-weight:bold}.details-btn{white-space:nowrap}
 #requestsBody td{vertical-align:middle}
 @media(max-width:600px){.detail-grid{grid-template-columns:1fr}.modal-body{padding:16px}.modal-head{padding:16px}.request-dialog{width:calc(100vw - 16px);max-height:93vh}.modal-body{max-height:calc(93vh - 75px)}}
+
+/* لوحة تحكم تنفيذية */
+:root{--navy:#101e35;--blue:#2563eb;--border:#e5eaf2}
+body{background:#f4f7fb}
+header{background:linear-gradient(110deg,#0c172b,#17365a);padding:20px max(22px,calc((100% - 1350px)/2))}
+header h1{font-size:22px;letter-spacing:-.5px}
+main{margin:25px auto}
+.card{border:1px solid var(--border);box-shadow:0 5px 24px #15294b09}
+.top{background:linear-gradient(110deg,#fff,#f2f7ff)}
+.top h2{margin:0 0 8px}
+.stat{box-shadow:0 4px 14px #15294b08}
+.stat strong{color:#163e81;font-size:30px}
+th{color:#536581;font-size:13px}
+#requestsBody tr:hover{background:#f8fbff}
+.section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.section-heading h2{margin:0;font-size:20px}
+.balance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.balance-card{border:1px solid #e3eaf4;background:linear-gradient(145deg,#fff,#f9fbff);border-radius:15px;padding:18px;min-width:0}
+.balance-name{font-weight:700;font-size:17px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.balance-status{font-size:11px;background:#e9eef6;border-radius:99px;padding:5px 9px;color:#52627b}
+.balance-number{font-size:31px;font-weight:800;color:#142c52;direction:ltr;text-align:right;margin:15px 0 2px;font-variant-numeric:tabular-nums}
+.balance-unit{font-size:13px;color:#667085}
+.balance-time{font-size:12px;color:#64748b;margin-top:12px}
+.balance-details{font-size:12px;line-height:1.9;color:#52627b;overflow-wrap:anywhere;margin-top:10px}
+.balance-card.unavailable .balance-number{font-size:19px;color:#64748b}
+.balance-error{color:#b42318;font-size:13px}
+@media(max-width:900px){.balance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.balance-grid{grid-template-columns:1fr}.top{align-items:start;flex-direction:column}.card{padding:17px}header{padding:16px}}
 </style>
 
 </head>
@@ -121,18 +149,29 @@ select{border:1px solid #d5dce8;background:white}
 
 <div>
 
-<h2>طلبات الخدمات</h2>
+<h2>نظرة عامة على التشغيل</h2>
 
 <p id="userEmail" class="muted"></p>
 
 </div>
 
-<button id="refresh" type="button">تحديث الطلبات</button>
+<button id="refresh" type="button">تحديث البيانات</button>
 
 </div>
 
 <div class="stats" aria-label="ملخص الطلبات"><div class="stat"><strong id="statAll">0</strong><span>إجمالي الطلبات</span></div><div class="stat"><strong id="statNew">0</strong><span>جديد</span></div><div class="stat"><strong id="statProgress">0</strong><span>قيد التنفيذ</span></div><div class="stat"><strong id="statDone">0</strong><span>مكتمل</span></div></div>
+<section class="card" aria-labelledby="balancesTitle">
+ <div class="section-heading">
+  <div><h2 id="balancesTitle">أرصدة مزودي الخدمات API</h2><p class="muted">آخر أرصدة محفوظة في النظام، وليست بالضرورة أرصدة لحظية</p></div>
+  <button id="refreshBalances" type="button" class="secondary">تحديث العرض</button>
+ </div>
+ <div id="balancesGrid" class="balance-grid" aria-live="polite">
+  <div class="balance-card unavailable">جارٍ تحميل الأرصدة...</div>
+ </div>
+ <p id="balancesMessage" class="muted" role="status"></p>
+</section>
 <div class="card">
+<div class="section-heading"><h2>إدارة طلبات العملاء</h2></div>
 <div class="toolbar"><div><label for="searchRequests">بحث في الطلبات</label><input id="searchRequests" type="search" placeholder="رقم التذكرة، العميل، البريد..."></div><div><label for="filterStatus">تصفية الحالة</label><select id="filterStatus"><option value="">كل الحالات</option><option>جديد</option><option>قيد التنفيذ</option><option>مكتمل</option><option>ملغي</option></select></div><button id="clearFilters" type="button" class="secondary">مسح التصفية</button></div>
 <p id="count" class="muted"></p>
 
@@ -183,6 +222,69 @@ const $=id=>document.getElementById(id);
 
 let currentUser=null;
 let cachedRequests=[];
+let balancesLoading=false;
+const providerLabels={heygen:"HeyGen",openai:"OpenAI",elevenlabs:"ElevenLabs",supabase:"Supabase",resend:"Resend"};
+function makeEl(tag,cls,content){
+ const el=document.createElement(tag);
+ if(cls)el.className=cls;
+ if(content!==undefined)el.textContent=String(content);
+ return el;
+}
+function displayDate(value){
+ if(!value)return "غير متوفر";
+ const d=new Date(value);
+ return Number.isNaN(d.getTime())?"غير متوفر":d.toLocaleString("ar-SA");
+}
+function renderBalances(rows){
+ const grid=$("balancesGrid");grid.replaceChildren();
+ const map=new Map((rows||[]).map(x=>[String(x.provider).toLowerCase(),x]));
+ const names=[...new Set(["heygen","openai","elevenlabs","supabase","resend",...map.keys()])];
+ for(const key of names){
+  const data=map.get(key);
+  const card=makeEl("article","balance-card"+(!data?" unavailable":""));
+  const head=makeEl("div","balance-name");
+  head.append(makeEl("span","",providerLabels[key]||key),makeEl("span","balance-status",data?(data.last_error?"خطأ مزامنة":"مسجل"):"غير مربوط"));
+  card.append(head);
+  if(data&&data.remaining_quota!==null&&data.remaining_quota!==undefined){
+   card.append(makeEl("div","balance-number",Number(data.remaining_quota).toLocaleString("en-US",{maximumFractionDigits:3})));
+   card.append(makeEl("div","balance-unit",data.quota_unit==="api_credits"?"رصيد API":(data.quota_unit||"وحدة")));
+  }else{
+   card.append(makeEl("div","balance-number",data?"الرصيد غير متاح":"لم يُربط بعد"));
+   card.append(makeEl("div","balance-unit",data?"لا يقدم المصدر قيمة رصيد حالياً":"يتطلب ربط API من الخادم"));
+  }
+  card.append(makeEl("div","balance-time","آخر تحديث: "+(data?displayDate(data.updated_at):"—")));
+  if(data?.last_error)card.append(makeEl("div","balance-error",data.last_error));
+  if(key==="heygen"&&data?.details&&typeof data.details==="object"){
+   const details=data.details;
+   const keys=[["tts_free_credit","رصيد الصوت"],["avatar_iv_free_credit","رصيد الأفاتار"],["b_roll_free_credit","رصيد B-roll"]];
+   const lines=keys.filter(([k])=>details[k]!==undefined).map(([k,label])=>label+": "+details[k]);
+   if(lines.length)card.append(makeEl("div","balance-details",lines.join(" | ")));
+  }
+  grid.append(card);
+ }
+}
+async function loadBalances(){
+ if(!currentUser||balancesLoading)return;
+ balancesLoading=true;
+ $("refreshBalances").disabled=true;
+ $("balancesMessage").textContent="جارٍ قراءة آخر رصيد محفوظ...";
+ try{
+  const {data,error}=await supabase.from("api_provider_balances")
+   .select("provider,remaining_quota,quota_unit,details,last_http_status,last_error,updated_at")
+   .order("provider",{ascending:true});
+  if(error)throw error;
+  renderBalances(data||[]);
+  $("balancesMessage").textContent="يتم تحديث الأرصدة تلقائياً من الخادم عند توفر الربط. زر تحديث العرض يقرأ البيانات المحفوظة فقط.";
+ }catch(err){
+  renderBalances([]);
+  $("balancesMessage").textContent="تعذر قراءة الأرصدة: "+(err?.message||"تحقق من صلاحيات القراءة RLS");
+ }finally{
+  balancesLoading=false;
+  $("refreshBalances").disabled=false;
+ }
+}
+$("refreshBalances").addEventListener("click",loadBalances);
+
 function updateStats(){
  const counts={};for(const r of cachedRequests)counts[r.status]=(counts[r.status]||0)+1;
  $("statAll").textContent=cachedRequests.length;
@@ -266,7 +368,7 @@ async function checkAdmin(){
 
  showDashboard(user.email||"");
 
- await loadRequests();
+ await Promise.all([loadRequests(),loadBalances()]);
 
 }
 
@@ -604,7 +706,7 @@ $("logout").addEventListener("click",async()=>{
 
 });
 
-$("refresh").addEventListener("click",loadRequests);
+$("refresh").addEventListener("click",()=>Promise.all([loadRequests(),loadBalances()]));
 
 await checkAdmin();
 
